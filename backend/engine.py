@@ -295,34 +295,65 @@ def _health(base_url: str, timeout: float = 5.0) -> tuple[dict[str, Any] | None,
     return None, None
 
 
-def _choose_loaded_model(health: dict[str, Any], requested: str) -> dict[str, Any] | None:
+def _choose_loaded_model(health: dict[str, Any], requested: str) -> tuple[dict[str, Any] | None, str]:
     models = [item for item in health.get("all_models_loaded", []) if isinstance(item, dict)]
     for item in models:
         if requested in {item.get("model_name"), item.get("id"), item.get("model_loaded")}:
-            return item
+            return item, "requested_id"
     loaded_name = health.get("model_loaded")
     for item in models:
         if item.get("model_name") == loaded_name:
-            return item
+            return item, "health_model_loaded"
     if len(models) == 1:
-        return models[0]
+        return models[0], "single_loaded_model"
     # last_use is the only safe fallback when aliases are transformed by a proxy.
-    return max(models, key=lambda item: float(item.get("last_use") or 0), default=None)
+    return max(models, key=lambda item: float(item.get("last_use") or 0), default=None), "latest_last_use_fallback"
+
+
+def _find_swap_process() -> dict[str, Any] | None:
+    """Find the local llama-swap supervisor without assuming a service manager."""
+    if not hasattr(os, "getuid"):
+        return None
+    try:
+        own_uid = os.getuid()
+        for proc in Path("/proc").iterdir():
+            if not proc.name.isdigit():
+                continue
+            try:
+                status = (proc / "status").read_text(encoding="utf-8", errors="replace")
+                uid_line = next((line for line in status.splitlines() if line.startswith("Uid:")), "")
+                if uid_line.split()[1] != str(own_uid):
+                    continue
+                argv = _read_proc_cmdline(int(proc.name)) or []
+                exe = _proc_exe(int(proc.name)) or ""
+                if "llama-swap" not in os.path.basename(exe).lower() and not any("llama-swap" in part.lower() for part in argv):
+                    continue
+                return {"pid": int(proc.name), "argv": argv, "executable": exe, "start_ticks": _proc_start_ticks(int(proc.name))}
+            except (FileNotFoundError, PermissionError, IndexError, ValueError):
+                continue
+    except (FileNotFoundError, PermissionError):
+        return None
+    return None
 
 
 def capture_runtime(config: dict[str, Any], requested_model: str, emit: Callable[[str, dict[str, Any]], None]) -> dict[str, Any]:
     """Capture a structured evidence bundle. Missing optional sources are explicit."""
     evidence: dict[str, Any] = {"captured_at": time.time(), "requested_model": requested_model, "sources": []}
-    health, health_url = _health(config.get("base_url", ""))
+    # Lemonade exposes the structured loaded-model registry on its own API;
+    # llama-swap itself normally only exposes /health and /v1/models.
+    health, health_url = _health(config.get("lemonade_url") or config.get("base_url", ""))
+    if health is None and config.get("lemonade_url"):
+        health, health_url = _health(config.get("base_url", ""))
     if health is not None:
         evidence["lemonade_health"] = health
         evidence["sources"].append({"name": "lemonade_health", "url": health_url, "confidence": "authoritative"})
     else:
         evidence["lemonade_health_error"] = "health endpoint unavailable"
 
-    loaded = _choose_loaded_model(health or {}, requested_model)
+    loaded, match_mode = _choose_loaded_model(health or {}, requested_model)
     if loaded:
         evidence["lemonade_model"] = loaded
+        evidence["model_match"] = {"mode": match_mode, "requested": requested_model, "selected": loaded.get("model_name")}
         backend_url = loaded.get("backend_url")
         pid = loaded.get("pid")
         if backend_url:
@@ -354,7 +385,7 @@ def capture_runtime(config: dict[str, Any], requested_model: str, emit: Callable
                     "listening_ports": sorted(ports),
                     "backend_port_verified": expected_port is None or expected_port in ports or not ports,
                 }
-                evidence["sources"].append({"name": "proc_cmdline", "pid": pid_int, "confidence": "authoritative_process"})
+                evidence["sources"].append({"name": "proc_cmdline", "pid": pid_int, "confidence": "authoritative_process" if evidence["process"]["backend_port_verified"] else "process_unverified_port"})
             except (TypeError, ValueError):
                 evidence["process_error"] = "invalid pid from health response"
     else:
@@ -372,6 +403,10 @@ def capture_runtime(config: dict[str, Any], requested_model: str, emit: Callable
         "platform": os.uname().sysname + " " + os.uname().release if hasattr(os, "uname") else os.name,
         "python": os.sys.version.split()[0],
     }
+    swap_process = _find_swap_process()
+    if swap_process:
+        evidence["llama_swap_process"] = swap_process
+        evidence["sources"].append({"name": "llama_swap_process", "pid": swap_process["pid"], "confidence": "authoritative_supervisor"})
     emit("snapshot", {"requested_model": requested_model, "evidence_sources": evidence["sources"]})
     return evidence
 

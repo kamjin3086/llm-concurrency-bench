@@ -14,9 +14,10 @@ class SecurityStoreTests(unittest.TestCase):
         self.assertNotIn("correct horse", encoded)
 
     def test_redaction(self):
-        value = redact({"path": "/home/alice/models/a.gguf", "authorization": "Bearer abc", "prompt": "secret"}, remove_prompts=True)
+        value = redact({"path": "/home/alice/models/a.gguf", "authorization": "Bearer abc", "prompt": "secret", "argv": ["llama-server", "--api-key", "sk-private"]}, remove_prompts=True)
         self.assertEqual(value["prompt"], "[prompt hidden]")
         self.assertEqual(value["authorization"], "[redacted]")
+        self.assertEqual(value["argv"][-1], "[redacted]")
 
     def test_store_seeds_defaults_and_roundtrips_job(self):
         with tempfile.TemporaryDirectory() as directory:

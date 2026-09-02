@@ -8,7 +8,8 @@ import os
 import sys
 
 from backend.security import hash_password
-from backend.server import DEFAULT_DB, App, main as serve_main
+from backend.server import DEFAULT_DB, main as serve_main
+from backend.store import Store
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -28,7 +29,7 @@ def main(argv: list[str] | None = None) -> int:
         second = getpass.getpass("Repeat password: ")
         if first != second:
             print("Passwords do not match", file=sys.stderr); return 2
-        store = App(args.db).store
+        store = Store(args.db)
         store.set_setting("password_hash", hash_password(first))
         print(f"Password updated in {args.db}")
         return 0

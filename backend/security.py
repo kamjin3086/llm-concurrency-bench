@@ -71,7 +71,20 @@ def redact(value: Any, *, remove_prompts: bool = False) -> Any:
                 result[str(key)] = redact(item, remove_prompts=remove_prompts)
         return result
     if isinstance(value, list):
-        return [redact(item, remove_prompts=remove_prompts) for item in value]
+        result = []
+        redact_next = False
+        secret_flags = {"--api-key", "--apikey", "--token", "--secret", "--password", "-api-key"}
+        for item in value:
+            if redact_next:
+                result.append("[redacted]")
+                redact_next = False
+                continue
+            if isinstance(item, str) and item.lower() in secret_flags:
+                result.append(item)
+                redact_next = True
+            else:
+                result.append(redact(item, remove_prompts=remove_prompts))
+        return result
     if isinstance(value, tuple):
         return [redact(item, remove_prompts=remove_prompts) for item in value]
     return value
