@@ -66,7 +66,7 @@
         <div class="run-grid">
           <section class="panel model-panel">
             <div class="panel-heading"><div><p class="eyebrow">STEP 01 · TARGETS</p><h3>选择模型</h3></div><div class="heading-actions"><button id="model-expand-toggle" class="subtle-button">全部展开</button><button id="refresh-models" class="subtle-button">↻ 刷新</button><span id="model-count" class="count-badge">0 个已选</span></div></div>
-            <p class="panel-help">列表来自当前端点。相同基础模型的 instruct、thinking、量化等变体会收进同一组；点击组名左侧箭头展开。</p>
+            <p class="panel-help">列表来自当前端点。系统按模型 ID 的共同前缀自动归组，父节点只保留一层；点击左侧箭头展开差异部分。</p>
             <div id="model-list" class="model-list"><div class="empty-block">正在读取端点模型…</div></div>
           </section>
           <section class="panel config-panel">

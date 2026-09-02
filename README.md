@@ -38,7 +38,7 @@ The existing headless command remains available:
 
 ## Daily workflow
 
-1. Refresh the model list from the configured endpoint. Related names are grouped into a collapsible tree, so `thinking`, `high`, `med`, and quantized variants do not compete for attention.
+1. Refresh the model list from the configured endpoint. IDs are grouped by a separator-aware longest common prefix, so new naming conventions and variants do not need a hardcoded suffix list.
 2. Check one or more model variants, or select an entire group from its parent row.
 3. Pick `快速检查`, `标准测试`, or `稳定性测试` and adjust the few fields that matter.
 4. Start the run. Models execute in order and one benchmark owns the machine at a time.

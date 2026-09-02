@@ -65,35 +65,69 @@
   function reportHtml(job) { const runs = (job.runs || []).filter((run) => run.status === 'completed'); const points = runs.flatMap((run) => run.summary?.points || []); const peak = points.reduce((a, b) => Number(a?.aggregate_decode_tps || 0) > Number(b?.aggregate_decode_tps || 0) ? a : b, null); const average = runs.length ? runs.reduce((sum, run) => sum + Number(run.summary?.points?.[0]?.avg_stream_decode_tps || 0), 0) / runs.length : null; return `<div class="report-head"><div><p class="eyebrow">BENCHROOM / PERFORMANCE REPORT</p><h3>${esc(job.config?.preset_name || 'Benchmark')}</h3><p>${date(job.created_at)} · ${esc(job.config?.base_url || 'local endpoint')} · ${runs.length} models</p></div><span class="report-flag">● REDACTED SHARE VIEW</span></div><div class="report-insights"><div class="report-insight"><strong>${fmt(peak?.aggregate_decode_tps)}</strong><span>峰值聚合 decode · tok/s</span></div><div class="report-insight"><strong>${peak?.concurrency || '—'}</strong><span>峰值并发</span></div><div class="report-insight"><strong>${fmt(average)}</strong><span>模型平均单路速度 · tok/s</span></div></div><div class="chart-panel"><div class="chart-title"><h4>并发跑道 / Aggregate decode</h4><span class="chart-legend">${esc(job.config?.benchmark?.max_tokens || '—')} output tokens</span></div>${makeChart(runs.map((run) => ({ label: run.model_label, points: run.summary?.points || [] })))}</div>${runs.map((run) => { const p = run.summary?.points || []; const evidence = run.runtime_snapshot || {}; const lm = evidence.lemonade_model || {}; const props = evidence.llama_props || {}; const params = props.default_generation_settings || {}; const ctx = params.n_ctx || lm.recipe_options?.ctx_size || '—'; const recipe = lm.recipe ? `${lm.recipe}${lm.device ? ` · ${lm.device}` : ''}` : '未取到 Lemonade 运行信息'; const build = props.build_info || 'build 未返回'; const match = evidence.model_match?.mode || 'unknown'; return `<div class="report-model-block"><h4>${esc(run.model_label)}</h4><p class="report-sub">甜点并发 c=${run.summary?.sweet_spot?.concurrency || '—'} · ${run.summary?.sweet_spot?.reason || '—'}</p><p class="report-sub">运行证据：ctx ${esc(ctx)} · ${esc(recipe)} · ${esc(build)} · model match ${esc(match)}</p><table><thead><tr><th>并发</th><th>聚合 decode</th><th>每路 stream</th><th>TTFT p50</th><th>失败</th></tr></thead><tbody>${p.map((point) => `<tr><td>c=${point.concurrency}</td><td>${fmt(point.aggregate_decode_tps)}</td><td>${fmt(point.avg_stream_decode_tps)}</td><td>${fmt(point.ttft_p50_s)}s</td><td>${point.failed_requests || 0}</td></tr>`).join('')}</tbody></table></div>`; }).join('')}<p class="report-foot">分享视图已隐藏提示词、主机身份、绝对路径和秘密。完整证据只保存在本机历史数据库。</p>`; }
   function downloadPng(job) { const runs = (job.runs || []).filter((run) => run.status === 'completed'); const canvas = document.createElement('canvas'); canvas.width = 1800; canvas.height = 1200 + runs.length * 230; const ctx = canvas.getContext('2d'); ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--paper-2').trim() || '#151f29'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim() || '#e8edf4'; ctx.font = '800 42px Manrope, sans-serif'; ctx.fillText(job.config?.preset_name || 'Benchmark', 85, 105); ctx.fillStyle = '#67a9ff'; ctx.font = '500 18px monospace'; ctx.fillText('BENCHROOM / PERFORMANCE REPORT · REDACTED SHARE VIEW', 85, 57); ctx.fillStyle = '#8a98a9'; ctx.font = '18px monospace'; ctx.fillText(`${date(job.created_at)} · ${runs.length} models`, 85, 145); const all = runs.flatMap((run) => run.summary?.points || []); const max = Math.max(1, ...all.map((x) => Number(x.aggregate_decode_tps || 0))); const chartX = 85, chartY = 205, chartW = 1630, chartH = 350; ctx.strokeStyle = 'rgba(171,194,220,.18)'; ctx.lineWidth = 1; for (let i = 0; i < 5; i += 1) { const yy = chartY + chartH - i * chartH / 4; ctx.beginPath(); ctx.moveTo(chartX, yy); ctx.lineTo(chartX + chartW, yy); ctx.stroke(); } const colors = ['#67a9ff', '#5ee1ce', '#ff8f72', '#f8c86b']; runs.forEach((run, index) => { const pts = run.summary?.points || []; ctx.strokeStyle = colors[index % colors.length]; ctx.lineWidth = 5; ctx.beginPath(); pts.forEach((point, pointIndex) => { const xx = chartX + (pointIndex / Math.max(1, pts.length - 1)) * chartW; const yy = chartY + chartH - Number(point.aggregate_decode_tps || 0) / max * chartH; pointIndex ? ctx.lineTo(xx, yy) : ctx.moveTo(xx, yy); }); ctx.stroke(); ctx.fillStyle = colors[index % colors.length]; ctx.font = '18px monospace'; ctx.fillText(run.model_label, chartX + chartW - 280, chartY + 30 + index * 27); }); runs.forEach((run, index) => { const y = 625 + index * 220; ctx.fillStyle = '#e8edf4'; ctx.font = '700 24px Manrope, sans-serif'; ctx.fillText(run.model_label, 85, y); ctx.fillStyle = '#8a98a9'; ctx.font = '17px monospace'; const p = run.summary?.points || []; ctx.fillText(`sweet spot c=${run.summary?.sweet_spot?.concurrency || '—'}   ` + p.map((x) => `c${x.concurrency} ${fmt(x.aggregate_decode_tps)} tok/s`).join('   '), 85, y + 39); ctx.strokeStyle = 'rgba(171,194,220,.2)'; ctx.beginPath(); ctx.moveTo(85, y + 64); ctx.lineTo(1715, y + 64); ctx.stroke(); }); const link = document.createElement('a'); link.download = `benchroom-${new Date().toISOString().slice(0, 10)}.png`; link.href = canvas.toDataURL('image/png'); link.click(); }
 
-  /* Model tree: trim only well-known suffixes, so names remain useful while
-     variants such as thinking/high/Q8_0 share one readable parent row. */
-  const modelVariantWords = new Set(['instruct', 'instructed', 'thinking', 'think', 'reasoning', 'high', 'xhigh', 'medium', 'med', 'low', 'xlow', 'normal', 'base', 'chat', 'coding', 'code', 'coder', 'heretic', 'abliterated', 'uncensored', 'gguf', 'ud', 'flm', 'latest', 'default', 'sft', 'distill', 'preview', 'mini', 'turbo', 'flash', 'lite']);
-  function splitModelVariant(modelId) {
+  /* Model tree: derive groups from the longest useful common prefix of model
+     IDs. Names are tokenized at separators, not matched against a suffix word
+     list, so new naming conventions adapt automatically. We select disjoint
+     prefix nodes and render at most parent -> variant (two levels). */
+  function modelTokenize(modelId) {
     const raw = String(modelId || '').trim();
-    if (!raw) return { base: '未命名模型', variant: 'default' };
-    // Keep Q8_0 / IQ4_XS together while splitting the surrounding name.
-    const stem = raw.replace(/\.(?:gguf|safetensors?)$/i, '');
-    const protectedName = stem.replace(/((?:iq|q)\d+)_([a-z0-9]+)/ig, '$1~$2');
-    const parts = protectedName.split(/[-_:]/).map((part) => part.replace(/~/g, '_')).filter(Boolean);
-    const variant = [];
-    while (parts.length > 1) {
-      const tail = parts[parts.length - 1];
-      const isQuant = /^(?:iq|q)\d+(?:[_-]?[a-z0-9]+)*$/i.test(tail) || /^(?:mxfp|f|bf|fp)\d+(?:[_-]?[a-z0-9]+)*$/i.test(tail);
-      const isVariantWord = modelVariantWords.has(tail.toLowerCase()) || /^x?(?:high|low|medium|med|normal)$/i.test(tail) || /^v\d+(?:\.\d+)*$/i.test(tail) || /^\d{4}$/.test(tail);
-      if (!isQuant && !isVariantWord) break;
-      variant.unshift(parts.pop());
-    }
-    return { base: parts.join('-') || raw, variant: variant.length ? variant.join('-') : 'default' };
+    const tokens = [];
+    const pattern = /[^\s/\\:_-]+/g;
+    let match;
+    while ((match = pattern.exec(raw))) tokens.push({ value: match[0], key: match[0].toLocaleLowerCase(), start: match.index, end: pattern.lastIndex });
+    return { raw, tokens };
+  }
+  function modelTrie(records) {
+    const root = { depth: 0, children: new Map(), records: [], terminals: [] };
+    records.forEach((record, index) => {
+      let node = root;
+      node.records.push(index);
+      record.tokens.forEach((token) => {
+        if (!node.children.has(token.key)) node.children.set(token.key, { depth: node.depth + 1, token, children: new Map(), records: [], terminals: [] });
+        node = node.children.get(token.key);
+        node.records.push(index);
+      });
+      node.terminals.push(index);
+    });
+    return root;
+  }
+  function prefixCandidates(node, candidates = []) {
+    node.children.forEach((child) => prefixCandidates(child, candidates));
+    const branches = node.children.size + (node.terminals.length ? 1 : 0);
+    // Two lexical components avoid grouping unrelated models on a vendor-only
+    // prefix such as "Qwen3" while still handling arbitrary suffix formats.
+    if (node.depth >= 2 && node.records.length >= 2 && branches >= 2) candidates.push(node);
+    return candidates;
+  }
+  function prefixLabel(node, records) {
+    const record = records[node.records[0]];
+    const token = record?.tokens?.[node.depth - 1];
+    return token ? record.raw.slice(0, token.end).trim() : record?.raw || '未命名模型';
+  }
+  function variantLabel(record, node) {
+    const token = record.tokens[node.depth - 1];
+    const suffix = token ? record.raw.slice(token.end).replace(/^[\s/\\:_-]+/, '').trim() : '';
+    return suffix || '默认变体';
   }
   function groupedModels(models) {
-    const groups = new Map();
-    (models || []).forEach((model) => {
-      const split = splitModelVariant(model.id);
-      const key = split.base.toLowerCase();
-      if (!groups.has(key)) groups.set(key, { key, name: split.base, variants: [] });
-      groups.get(key).variants.push({ ...model, variant: split.variant });
+    const records = (models || []).map((model, index) => ({ ...model, index, ...modelTokenize(model.id) }));
+    const candidates = prefixCandidates(modelTrie(records));
+    candidates.sort((a, b) => b.records.length - a.records.length || a.depth - b.depth || prefixLabel(a, records).localeCompare(prefixLabel(b, records), 'zh-CN', { sensitivity: 'base' }));
+    const covered = new Set();
+    const groups = [];
+    candidates.forEach((node) => {
+      if (node.records.some((index) => covered.has(index))) return;
+      const name = prefixLabel(node, records);
+      if (!name || node.records.length < 2) return;
+      const variants = node.records.map((index) => ({ ...records[index], variant: variantLabel(records[index], node) }));
+      groups.push({ key: `prefix:${name.toLocaleLowerCase()}`, name, variants });
+      node.records.forEach((index) => covered.add(index));
     });
-    return [...groups.values()].sort((a, b) => a.name.localeCompare(b.name, 'zh-CN', { sensitivity: 'base' }));
+    records.forEach((record) => {
+      if (covered.has(record.index)) return;
+      groups.push({ key: `model:${record.index}`, name: record.id, variants: [{ ...record, variant: '默认变体' }] });
+    });
+    return groups.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN', { sensitivity: 'base' }));
   }
   function groupByKey(key) { return groupedModels(state.models).find((group) => group.key === key); }
   function toggleGroupSelection(key) {
