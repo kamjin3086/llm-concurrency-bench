@@ -67,7 +67,7 @@
 
   /* Model tree: trim only well-known suffixes, so names remain useful while
      variants such as thinking/high/Q8_0 share one readable parent row. */
-  const modelVariantWords = new Set(['instruct', 'instructed', 'thinking', 'think', 'reasoning', 'high', 'medium', 'med', 'low', 'base', 'chat', 'coding', 'code', 'coder', 'heretic', 'abliterated', 'uncensored', 'gguf', 'ud', 'flm', 'latest', 'default', 'sft', 'distill', 'preview', 'mini', 'turbo', 'flash', 'lite']);
+  const modelVariantWords = new Set(['instruct', 'instructed', 'thinking', 'think', 'reasoning', 'high', 'xhigh', 'medium', 'med', 'low', 'xlow', 'normal', 'base', 'chat', 'coding', 'code', 'coder', 'heretic', 'abliterated', 'uncensored', 'gguf', 'ud', 'flm', 'latest', 'default', 'sft', 'distill', 'preview', 'mini', 'turbo', 'flash', 'lite']);
   function splitModelVariant(modelId) {
     const raw = String(modelId || '').trim();
     if (!raw) return { base: '未命名模型', variant: 'default' };
@@ -79,7 +79,7 @@
     while (parts.length > 1) {
       const tail = parts[parts.length - 1];
       const isQuant = /^(?:iq|q)\d+(?:[_-]?[a-z0-9]+)*$/i.test(tail) || /^(?:mxfp|f|bf|fp)\d+(?:[_-]?[a-z0-9]+)*$/i.test(tail);
-      const isVariantWord = modelVariantWords.has(tail.toLowerCase()) || /^v\d+(?:\.\d+)*$/i.test(tail) || /^\d{4}$/.test(tail);
+      const isVariantWord = modelVariantWords.has(tail.toLowerCase()) || /^x?(?:high|low|medium|med|normal)$/i.test(tail) || /^v\d+(?:\.\d+)*$/i.test(tail) || /^\d{4}$/.test(tail);
       if (!isQuant && !isVariantWord) break;
       variant.unshift(parts.pop());
     }
