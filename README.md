@@ -22,7 +22,13 @@ For a one-time password change:
 python3 benchroom.py set-password
 ```
 
-For an optional user service, copy `systemd/llm-concurrency-bench.service.example` to `~/.config/systemd/user/`, adjust `WorkingDirectory`, then run `systemctl --user enable --now llm-concurrency-bench.service`.
+To install and start a user service in one step:
+
+```bash
+./install-user-service.sh
+```
+
+The script installs the unit for the current checkout, runs `daemon-reload`, enables and starts it, and requests user lingering so it can start at boot without an interactive login. Use `--no-linger` if that policy is managed elsewhere, or `--uninstall` to remove the unit. `--host`, `--port`, and `--db` override the defaults.
 
 The existing headless command remains available:
 
