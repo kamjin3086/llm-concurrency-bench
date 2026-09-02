@@ -67,7 +67,7 @@
 
   /* Model tree: trim only well-known suffixes, so names remain useful while
      variants such as thinking/high/Q8_0 share one readable parent row. */
-  const modelVariantWords = new Set(['instruct', 'instructed', 'thinking', 'think', 'reasoning', 'high', 'medium', 'med', 'low', 'base', 'chat', 'coding', 'code', 'heretic', 'abliterated', 'uncensored', 'gguf', 'ud', 'latest', 'default', 'sft', 'distill', 'preview', 'mini', 'turbo', 'flash', 'lite']);
+  const modelVariantWords = new Set(['instruct', 'instructed', 'thinking', 'think', 'reasoning', 'high', 'medium', 'med', 'low', 'base', 'chat', 'coding', 'code', 'coder', 'heretic', 'abliterated', 'uncensored', 'gguf', 'ud', 'flm', 'latest', 'default', 'sft', 'distill', 'preview', 'mini', 'turbo', 'flash', 'lite']);
   function splitModelVariant(modelId) {
     const raw = String(modelId || '').trim();
     if (!raw) return { base: '未命名模型', variant: 'default' };
