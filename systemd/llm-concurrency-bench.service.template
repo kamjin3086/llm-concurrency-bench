@@ -5,9 +5,9 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory="__PROJECT_DIR__"
-ExecStart="__PYTHON_BIN__" -m backend.server --host "__HOST__" --port __PORT__
-Environment="LLM_BENCH_DB=__DB_PATH__"
+WorkingDirectory=__PROJECT_DIR__
+ExecStart=__PYTHON_BIN__ -m backend.server --host __HOST__ --port __PORT__
+Environment=LLM_BENCH_DB=__DB_PATH__
 Environment=PYTHONUNBUFFERED=1
 Restart=on-failure
 RestartSec=3

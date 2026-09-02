@@ -71,9 +71,11 @@ import sys
 
 template, output, project, python_bin, host, port, db = sys.argv[1:]
 
-def unit_quote(value: str) -> str:
-    # systemd supports quoted values; escape its two special characters here.
-    return value.replace('\\', '\\\\').replace('"', '\\"').replace('%', '%%').replace('\n', '').replace('\r', '')
+def unit_escape(value: str) -> str:
+    # Keep generated paths unquoted: systemd treats quotes literally for some
+    # path settings. Encode every non-safe byte using its native \xNN syntax.
+    safe = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_./:-[]"
+    return ''.join(chr(byte) if byte in safe else f"\\x{byte:02x}" for byte in value.encode('utf-8'))
 
 text = pathlib.Path(template).read_text(encoding='utf-8')
 for key, value in {
@@ -83,7 +85,7 @@ for key, value in {
     '__PORT__': port,
     '__DB_PATH__': db,
 }.items():
-    text = text.replace(key, unit_quote(value))
+    text = text.replace(key, unit_escape(value))
 pathlib.Path(output).write_text(text, encoding='utf-8')
 PY
 
