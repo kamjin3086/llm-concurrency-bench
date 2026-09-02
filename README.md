@@ -38,8 +38,8 @@ The existing headless command remains available:
 
 ## Daily workflow
 
-1. Refresh the model list from the configured endpoint.
-2. Check one or more models.
+1. Refresh the model list from the configured endpoint. Related names are grouped into a collapsible tree, so `thinking`, `high`, `med`, and quantized variants do not compete for attention.
+2. Check one or more model variants, or select an entire group from its parent row.
 3. Pick `快速检查`, `标准测试`, or `稳定性测试` and adjust the few fields that matter.
 4. Start the run. Models execute in order and one benchmark owns the machine at a time.
 5. Open the generated report, review the peak and balanced (“sweet spot”) concurrency, then download a redacted PNG.

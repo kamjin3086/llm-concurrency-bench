@@ -55,10 +55,18 @@
 
       <section id="view-run" class="view active-view">
         <div class="welcome-line"><span>当前入口</span><select id="endpoint-select" class="endpoint-select" aria-label="选择推理入口"></select><span class="slash">/</span><span id="active-endpoint-url">http://local:8101/v1</span><button class="inline-link" data-view-link="settings">修改</button></div>
+        <div class="run-hero">
+          <div>
+            <p class="eyebrow">MODEL PERFORMANCE LAB</p>
+            <h3>先选一组模型，再看它们的速度曲线。</h3>
+            <p>模型、并发和证据会随本次测试一起保存。以后可以回到历史记录，复盘同一台机器上的变化。</p>
+          </div>
+          <div class="run-hero-stamp"><span>WORKFLOW</span><strong>选择 → 配置 → 回看</strong><small>结果自动归档</small></div>
+        </div>
         <div class="run-grid">
           <section class="panel model-panel">
-            <div class="panel-heading"><div><p class="eyebrow">STEP 01 · TARGETS</p><h3>选择模型</h3></div><div class="heading-actions"><button id="refresh-models" class="subtle-button">↻ 刷新</button><span id="model-count" class="count-badge">0 selected</span></div></div>
-            <p class="panel-help">模型列表直接来自当前端点。可一次勾选多个，系统会按顺序完成并分别记录。</p>
+            <div class="panel-heading"><div><p class="eyebrow">STEP 01 · TARGETS</p><h3>选择模型</h3></div><div class="heading-actions"><button id="model-expand-toggle" class="subtle-button">全部展开</button><button id="refresh-models" class="subtle-button">↻ 刷新</button><span id="model-count" class="count-badge">0 个已选</span></div></div>
+            <p class="panel-help">列表来自当前端点。相同基础模型的 instruct、thinking、量化等变体会收进同一组；点击组名左侧箭头展开。</p>
             <div id="model-list" class="model-list"><div class="empty-block">正在读取端点模型…</div></div>
           </section>
           <section class="panel config-panel">
