@@ -354,6 +354,15 @@ class Handler(BaseHTTPRequestHandler):
                 from .engine import get_json
                 return get_json(root + path, 3)
             except Exception:
+                # llama-swap's health endpoint is intentionally a plain-text OK.
+                if path == "/health":
+                    try:
+                        request = urllib.request.Request(root + path, headers={"Accept": "text/plain"})
+                        with urllib.request.urlopen(request, timeout=3) as response:
+                            if response.read(64).strip().upper() == b"OK":
+                                return {"status": "ok", "source": "plain_health"}
+                    except Exception:
+                        pass
                 continue
         return None
 
