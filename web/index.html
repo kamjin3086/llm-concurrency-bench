@@ -55,14 +55,6 @@
 
       <section id="view-run" class="view active-view">
         <div class="welcome-line"><span>当前入口</span><select id="endpoint-select" class="endpoint-select" aria-label="选择推理入口"></select><span class="slash">/</span><span id="active-endpoint-url">http://local:8101/v1</span><button class="inline-link" data-view-link="settings">修改</button></div>
-        <div class="run-hero">
-          <div>
-            <p class="eyebrow">MODEL PERFORMANCE LAB</p>
-            <h3>先选一组模型，再看它们的速度曲线。</h3>
-            <p>模型、并发和证据会随本次测试一起保存。以后可以回到历史记录，复盘同一台机器上的变化。</p>
-          </div>
-          <div class="run-hero-stamp"><span>WORKFLOW</span><strong>选择 → 配置 → 回看</strong><small>结果自动归档</small></div>
-        </div>
         <div class="run-grid">
           <section class="panel model-panel">
             <div class="panel-heading"><div><p class="eyebrow">STEP 01 · TARGETS</p><h3>选择模型</h3></div><div class="heading-actions"><button id="model-expand-toggle" class="subtle-button">全部展开</button><button id="refresh-models" class="subtle-button">↻ 刷新</button><span id="model-count" class="count-badge">0 个已选</span></div></div>
@@ -82,19 +74,19 @@
       </section>
 
       <section id="view-history" class="view">
-        <div class="section-intro"><p class="eyebrow">RUN ARCHIVE</p><h3>每一次速度，都值得回看。</h3><p class="muted">按时间、模型和预设留存完整条件；点击一条记录查看可复现快照。</p></div>
+        <div class="section-intro"><p class="eyebrow">RUN ARCHIVE</p><p class="muted">按时间、模型和预设留存完整条件；点击一条记录查看可复现快照。</p></div>
         <div class="filter-bar"><input id="history-filter" type="search" placeholder="筛选模型或预设…"><select id="history-status"><option value="">全部状态</option><option value="completed">已完成</option><option value="failed">失败</option><option value="cancelled">已取消</option></select><button id="refresh-history" class="subtle-button">↻ 刷新</button></div>
         <div id="history-list" class="history-list"><div class="empty-block">正在读取历史…</div></div>
       </section>
 
       <section id="view-compare" class="view">
-        <div class="section-intro"><p class="eyebrow">SIDE BY SIDE</p><h3>把条件相同的记录放在一起。</h3><p class="muted">先在历史记录中选择两条或多条模型运行，再回到这里查看吞吐曲线。</p></div>
+        <div class="section-intro"><p class="eyebrow">SIDE BY SIDE</p><p class="muted">先在历史记录中选择两条或多条模型运行，再回到这里查看吞吐曲线。</p></div>
         <div id="compare-empty" class="empty-state"><div class="empty-glyph">↗</div><h4>还没有待对比的记录</h4><p>在历史卡片上点击“加入对比”。</p><button class="button secondary" data-view-link="history">打开历史记录</button></div>
         <div id="compare-content" class="hidden"><div id="compare-summary" class="compare-summary"></div><div id="compare-chart" class="chart-panel"></div><div id="compare-table" class="data-table-wrap"></div></div>
       </section>
 
       <section id="view-settings" class="view">
-        <div class="section-intro"><p class="eyebrow">LOW FREQUENCY / CONTROL</p><h3>端点与证据设置</h3><p class="muted">日常不需要进入这里。保存后，下一次测试会使用新入口。</p></div>
+        <div class="section-intro"><p class="eyebrow">LOW FREQUENCY / CONTROL</p><p class="muted">日常不需要进入这里。保存后，下一次测试会使用新入口。</p></div>
         <div class="settings-grid"><section class="panel"><div class="panel-heading"><div><p class="eyebrow">ENDPOINTS</p><h3>推理入口</h3></div><button id="new-endpoint-btn" class="subtle-button">+ 新端点</button></div><div id="endpoint-list" class="endpoint-list"></div><form id="endpoint-form" class="settings-form hidden"><input id="endpoint-id" type="hidden"><label>名称<input id="endpoint-name" required></label><label>OpenAI base URL<input id="endpoint-base" placeholder="http://127.0.0.1:8101/v1" required></label><label>类型<select id="endpoint-kind"><option value="llama-swap">llama-swap + Lemonade</option><option value="auto">自动探测</option><option value="openai">普通 OpenAI 兼容端点</option></select></label><label>Lemonade URL（可选）<input id="endpoint-lemonade" placeholder="http://127.0.0.1:13305"></label><label>API key 环境变量名（可选）<input id="endpoint-key-env" placeholder="OPENAI_API_KEY"></label><div class="form-actions"><button type="button" id="cancel-endpoint-btn" class="subtle-button">取消</button><button type="submit" class="button primary">保存端点</button></div></form></section><section class="panel evidence-panel"><div class="panel-heading"><div><p class="eyebrow">EVIDENCE POLICY</p><h3>参数快照</h3></div><span class="verified-badge">● 结构化</span></div><div class="evidence-stack"><div><strong>优先级</strong><p>Lemonade health / launch_command → 已校验 PID 的 /proc cmdline → llama.cpp /props、/slots → 日志诊断。</p></div><div><strong>本地完整保存</strong><p>历史数据库保留复现所需的请求、路径和运行时证据；分享视图自动清除身份、路径、提示词和秘密。</p></div><div><strong>运行环境</strong><p id="system-summary">尚未读取主机信息。</p></div></div></section></div>
       </section>
     </main>
