@@ -1,0 +1,40 @@
+{
+  "concurrencies": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "preload": true,
+  "preload_timeout": 1800,
+  "preload_retry_interval": 3,
+  "preload_max_tokens": 8,
+  "settle_seconds": 1,
+  "warmup": 1,
+  "repetitions": 2,
+  "max_tokens": 512,
+  "timeout": 900,
+  "temperature": 0.0,
+  "seed": 42,
+  "unique_prompts": true,
+  "profiles": [
+    {
+      "name": "Tiel-Coder-35B-A3B-thinking",
+      "model": "Tiel-Coder-35B-A3B-thinking",
+      "base_url": "http://127.0.0.1:8101/v1",
+      "max_concurrency": 4
+    },
+    {
+      "name": "LFM2.5-2.6B",
+      "model": "LFM2.5-2.6B",
+      "base_url": "http://127.0.0.1:8101/v1",
+      "max_concurrency": 4
+    },
+    {
+      "name": "Qwen3.8-27B-coding-medium",
+      "model": "Qwen3.8-27B-coding-medium",
+      "base_url": "http://127.0.0.1:8101/v1",
+      "max_concurrency": 4
+    }
+  ]
+}

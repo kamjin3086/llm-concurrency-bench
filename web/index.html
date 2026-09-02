@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>BenchRoom · LLM 速度仪表台</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div id="toast-region" aria-live="polite"></div>
+  <div id="auth-shell" class="auth-shell hidden">
+    <div class="auth-card">
+      <div class="brand-mark small">B<span>//</span>R</div>
+      <p class="eyebrow">PRIVATE MODEL LAB</p>
+      <h1 id="auth-title">进入 BenchRoom</h1>
+      <p id="auth-copy" class="muted">局域网访问需要管理员密码。</p>
+      <form id="auth-form">
+        <label id="password-label" for="password-input">密码</label>
+        <input id="password-input" type="password" minlength="10" autocomplete="current-password" required placeholder="至少 10 个字符">
+        <label id="password-confirm-wrap" class="hidden" for="password-confirm">确认密码</label>
+        <input id="password-confirm" class="hidden" type="password" minlength="10" autocomplete="new-password" placeholder="再次输入密码">
+        <button class="button primary full" type="submit"><span id="auth-submit">登录</span><span class="button-arrow">↗</span></button>
+      </form>
+      <p class="fine-print">数据只保存在运行模型的这台机器上。请勿将服务端口暴露到公网。</p>
+    </div>
+  </div>
+
+  <div id="app-shell" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="brand-lockup">
+        <div class="brand-mark">B<span>//</span>R</div>
+        <div><strong>BenchRoom</strong><small>local inference lab</small></div>
+      </div>
+      <div class="sidebar-rule"></div>
+      <p class="nav-caption">WORKSPACE</p>
+      <nav id="main-nav">
+        <button class="nav-item active" data-view="run"><span class="nav-index">01</span><span>新测试</span><kbd>⌘ 1</kbd></button>
+        <button class="nav-item" data-view="history"><span class="nav-index">02</span><span>历史记录</span><kbd>⌘ 2</kbd></button>
+        <button class="nav-item" data-view="compare"><span class="nav-index">03</span><span>对比</span><kbd>⌘ 3</kbd></button>
+        <button class="nav-item" data-view="settings"><span class="nav-index">04</span><span>设置</span><kbd>⌘ 4</kbd></button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="connection-mini"><span class="status-dot" id="sidebar-dot"></span><span id="sidebar-health">检测连接中</span></div>
+        <button id="logout-btn" class="text-button">退出登录</button>
+        <span class="build-label">BENCHROOM 0.1 · LOCAL</span>
+      </div>
+    </aside>
+
+    <main class="main-column">
+      <header class="topbar">
+        <div><p class="eyebrow" id="view-eyebrow">RUN / CONFIGURE</p><h2 id="view-title">新建一次测试</h2></div>
+        <div class="topbar-actions"><div class="host-pill"><span class="status-dot" id="top-dot"></span><span id="top-health">连接检查中</span></div><button id="theme-btn" class="icon-button" title="切换主题" aria-label="切换主题">◐</button></div>
+      </header>
+
+      <section id="view-run" class="view active-view">
+        <div class="welcome-line"><span>当前入口</span><select id="endpoint-select" class="endpoint-select" aria-label="选择推理入口"></select><span class="slash">/</span><span id="active-endpoint-url">http://local:8101/v1</span><button class="inline-link" data-view-link="settings">修改</button></div>
+        <div class="run-grid">
+          <section class="panel model-panel">
+            <div class="panel-heading"><div><p class="eyebrow">STEP 01 · TARGETS</p><h3>选择模型</h3></div><div class="heading-actions"><button id="refresh-models" class="subtle-button">↻ 刷新</button><span id="model-count" class="count-badge">0 selected</span></div></div>
+            <p class="panel-help">模型列表直接来自当前端点。可一次勾选多个，系统会按顺序完成并分别记录。</p>
+            <div id="model-list" class="model-list"><div class="empty-block">正在读取端点模型…</div></div>
+          </section>
+          <section class="panel config-panel">
+            <div class="panel-heading"><div><p class="eyebrow">STEP 02 · METHOD</p><h3>测试预设</h3></div><button id="save-preset-btn" class="subtle-button">保存为预设</button></div>
+            <div id="preset-list" class="preset-list"></div>
+            <div class="config-row"><label for="concurrency-input">并发档位</label><div id="concurrency-chips" class="chip-row"></div></div>
+            <div class="config-two-col"><label>重复次数<input id="repetitions-input" type="number" min="1" max="100"></label><label>输出 token<input id="max-tokens-input" type="number" min="1" max="131072"></label></div>
+            <details class="advanced-details"><summary>高级参数 <span>提示词、预热、seed、超时</span></summary><div class="advanced-fields"><label>温度<input id="temperature-input" type="number" min="0" max="2" step="0.1"></label><label>预热次数<input id="warmup-input" type="number" min="0" max="10"></label><label>Seed<input id="seed-input" type="number"></label><label>超时（秒）<input id="timeout-input" type="number" min="5" max="7200"></label><label class="wide">用户提示词<textarea id="prompt-input" rows="3"></textarea></label></div></details>
+            <div class="run-action"><div><span class="selected-summary" id="selected-summary">未选择模型</span><small id="run-estimate">选择模型后开始</small></div><button id="start-run-btn" class="button primary" disabled>开始测试 <span class="button-arrow">↗</span></button></div>
+          </section>
+        </div>
+        <section class="panel recent-panel"><div class="panel-heading"><div><p class="eyebrow">RECENT SIGNAL</p><h3>最近一次结果</h3></div><button class="subtle-button" data-view-link="history">查看全部 →</button></div><div id="recent-result" class="recent-result empty-block">还没有新版本测试记录。</div></section>
+      </section>
+
+      <section id="view-history" class="view">
+        <div class="section-intro"><p class="eyebrow">RUN ARCHIVE</p><h3>每一次速度，都值得回看。</h3><p class="muted">按时间、模型和预设留存完整条件；点击一条记录查看可复现快照。</p></div>
+        <div class="filter-bar"><input id="history-filter" type="search" placeholder="筛选模型或预设…"><select id="history-status"><option value="">全部状态</option><option value="completed">已完成</option><option value="failed">失败</option><option value="cancelled">已取消</option></select><button id="refresh-history" class="subtle-button">↻ 刷新</button></div>
+        <div id="history-list" class="history-list"><div class="empty-block">正在读取历史…</div></div>
+      </section>
+
+      <section id="view-compare" class="view">
+        <div class="section-intro"><p class="eyebrow">SIDE BY SIDE</p><h3>把条件相同的记录放在一起。</h3><p class="muted">先在历史记录中选择两条或多条模型运行，再回到这里查看吞吐曲线。</p></div>
+        <div id="compare-empty" class="empty-state"><div class="empty-glyph">↗</div><h4>还没有待对比的记录</h4><p>在历史卡片上点击“加入对比”。</p><button class="button secondary" data-view-link="history">打开历史记录</button></div>
+        <div id="compare-content" class="hidden"><div id="compare-summary" class="compare-summary"></div><div id="compare-chart" class="chart-panel"></div><div id="compare-table" class="data-table-wrap"></div></div>
+      </section>
+
+      <section id="view-settings" class="view">
+        <div class="section-intro"><p class="eyebrow">LOW FREQUENCY / CONTROL</p><h3>端点与证据设置</h3><p class="muted">日常不需要进入这里。保存后，下一次测试会使用新入口。</p></div>
+        <div class="settings-grid"><section class="panel"><div class="panel-heading"><div><p class="eyebrow">ENDPOINTS</p><h3>推理入口</h3></div><button id="new-endpoint-btn" class="subtle-button">+ 新端点</button></div><div id="endpoint-list" class="endpoint-list"></div><form id="endpoint-form" class="settings-form hidden"><input id="endpoint-id" type="hidden"><label>名称<input id="endpoint-name" required></label><label>OpenAI base URL<input id="endpoint-base" placeholder="http://127.0.0.1:8101/v1" required></label><label>类型<select id="endpoint-kind"><option value="llama-swap">llama-swap + Lemonade</option><option value="auto">自动探测</option><option value="openai">普通 OpenAI 兼容端点</option></select></label><label>Lemonade URL（可选）<input id="endpoint-lemonade" placeholder="http://127.0.0.1:13305"></label><label>API key 环境变量名（可选）<input id="endpoint-key-env" placeholder="OPENAI_API_KEY"></label><div class="form-actions"><button type="button" id="cancel-endpoint-btn" class="subtle-button">取消</button><button type="submit" class="button primary">保存端点</button></div></form></section><section class="panel evidence-panel"><div class="panel-heading"><div><p class="eyebrow">EVIDENCE POLICY</p><h3>参数快照</h3></div><span class="verified-badge">● 结构化</span></div><div class="evidence-stack"><div><strong>优先级</strong><p>Lemonade health / launch_command → 已校验 PID 的 /proc cmdline → llama.cpp /props、/slots → 日志诊断。</p></div><div><strong>本地完整保存</strong><p>历史数据库保留复现所需的请求、路径和运行时证据；分享视图自动清除身份、路径、提示词和秘密。</p></div><div><strong>运行环境</strong><p id="system-summary">尚未读取主机信息。</p></div></div></section></div>
+      </section>
+    </main>
+  </div>
+
+  <div id="run-drawer" class="drawer hidden" role="dialog" aria-modal="true" aria-labelledby="drawer-title"><div class="drawer-backdrop"></div><div class="drawer-card"><div class="drawer-header"><div><p class="eyebrow">LIVE RUN</p><h3 id="drawer-title">正在准备测试</h3></div><button id="cancel-run-btn" class="icon-button danger" title="取消测试">×</button></div><div class="progress-track"><span id="progress-bar"></span></div><p id="progress-label" class="progress-label">排队中…</p><div id="progress-models" class="progress-models"></div><div class="drawer-footer"><span id="progress-runtime" class="muted">—</span><button id="drawer-history-btn" class="subtle-button hidden">完成后查看结果 →</button></div></div></div>
+
+  <div id="report-modal" class="report-modal hidden"><div class="report-backdrop"></div><div class="report-card"><div class="report-toolbar"><span class="eyebrow">SHARE VIEW · REDACTED</span><div><button id="download-png-btn" class="button secondary">下载 PNG ↓</button><button id="close-report-btn" class="icon-button">×</button></div></div><div id="report-content" class="report-content"></div></div></div>
+  <script src="/app.js"></script>
+</body>
+</html>
